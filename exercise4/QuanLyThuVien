@@ -1,0 +1,152 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace QuanLyThuVien
+{
+    // Lớp cha trừu tượng
+    public abstract class Sach
+    {
+        public string MaSach { get; set; }
+        public DateTime NgayNhap { get; set; }
+        public double DonGia { get; set; }
+        public int SoLuong { get; set; }
+        public string NhaXuatBan { get; set; }
+
+        public Sach(string maSach, DateTime ngayNhap, double donGia, int soLuong, string nhaXuatBan)
+        {
+            MaSach = maSach;
+            NgayNhap = ngayNhap;
+            DonGia = donGia;
+            SoLuong = soLuong;
+            NhaXuatBan = nhaXuatBan;
+        }
+
+        public abstract double TinhThanhTien();
+
+        public virtual void XuatThongTin()
+        {
+            Console.Write($"Mã: {MaSach,-8} | Ngày: {NgayNhap:dd/MM/yyyy} | Đơn giá: {DonGia,8:N0} | SL: {SoLuong,3} | NXB: {NhaXuatBan,-12}");
+        }
+    }
+
+    // Lớp Sách giáo khoa kế thừa Sách
+    public class SachGiaoKhoa : Sach
+    {
+        public string TinhTrang { get; set; } // "mới" hoặc "cũ"
+
+        public SachGiaoKhoa(string maSach, DateTime ngayNhap, double donGia, int soLuong, string nhaXuatBan, string tinhTrang)
+            : base(maSach, ngayNhap, donGia, soLuong, nhaXuatBan)
+        {
+            TinhTrang = tinhTrang;
+        }
+
+        public override double TinhThanhTien()
+        {
+            if (TinhTrang.Trim().ToLower() == "mới" || TinhTrang.Trim().ToLower() == "moi")
+            {
+                return SoLuong * DonGia;
+            }
+            return SoLuong * DonGia * 0.5;
+        }
+
+        public override void XuatThongTin()
+        {
+            base.XuatThongTin();
+            Console.WriteLine($" | Loại: SGK ({TinhTrang,-4}) | Thành tiền: {TinhThanhTien(),10:N0}");
+        }
+    }
+
+    // Lớp Sách tham khảo kế thừa Sách
+    public class SachThamKhao : Sach
+    {
+        public double Thue { get; set; }
+
+        public SachThamKhao(string maSach, DateTime ngayNhap, double donGia, int soLuong, string nhaXuatBan, double thue)
+            : base(maSach, ngayNhap, donGia, soLuong, nhaXuatBan)
+        {
+            Thue = thue;
+        }
+
+        public override double TinhThanhTien()
+        {
+            return (SoLuong * DonGia) + Thue;
+        }
+
+        public override void XuatThongTin()
+        {
+            base.XuatThongTin();
+            Console.WriteLine($" | Thuế: {Thue,7:N0}   | Thành tiền: {TinhThanhTien(),10:N0}");
+        }
+    }
+
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+
+            // Khởi tạo danh sách gồm 3 SGK và 3 STK
+            List<Sach> danhSachSach = new List<Sach>()
+            {
+                new SachGiaoKhoa("GK01", new DateTime(2025, 1, 10), 30000, 10, "Kim Đồng", "mới"),
+                new SachGiaoKhoa("GK02", new DateTime(2025, 2, 15), 45000, 20, "Giáo Dục", "cũ"),
+                new SachGiaoKhoa("GK03", new DateTime(2025, 3, 20), 50000, 15, "Giáo Dục", "mới"),
+
+                new SachThamKhao("TK01", new DateTime(2025, 1, 5),  80000, 5,  "Trẻ", 20000),
+                new SachThamKhao("TK02", new DateTime(2025, 2, 12), 120000, 8, "Kim Đồng", 50000),
+                new SachThamKhao("TK03", new DateTime(2025, 4, 18), 150000, 12, "Tổng Hợp", 60000)
+            };
+
+            Console.WriteLine("========== DANH SÁCH SÁCH HIỆN CÓ ==========");
+            foreach (var sach in danhSachSach)
+            {
+                sach.XuatThongTin();
+            }
+
+            // 1. Tính tổng thành tiền cho từng loại
+            double tongTienSGK = danhSachSach.OfType<SachGiaoKhoa>().Sum(s => s.TinhThanhTien());
+            double tongTienSTK = danhSachSach.OfType<SachThamKhao>().Sum(s => s.TinhThanhTien());
+
+            Console.WriteLine("\n========== TỔNG THÀNH TIỀN TỪNG LOẠI ==========");
+            Console.WriteLine($"- Tổng thành tiền Sách Giáo Khoa: {tongTienSGK:N0} VNĐ");
+            Console.WriteLine($"- Tổng thành tiền Sách Tham Khảo: {tongTienSTK:N0} VNĐ");
+
+            // 2. Xuất ra các sách giáo khoa của nhà xuất bản K
+            Console.WriteLine("\n========== TÌM SÁCH GIÁO KHOA THEO NXB ==========");
+            Console.Write("Nhập tên nhà xuất bản K cần tìm: ");
+            string nxbK = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            var dsSGKCuaNXB = danhSachSach
+                .OfType<SachGiaoKhoa>()
+                .Where(s => s.NhaXuatBan.Equals(nxbK, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (dsSGKCuaNXB.Count > 0)
+            {
+                Console.WriteLine($"Kết quả tìm thấy {dsSGKCuaNXB.Count} cuốn SGK của NXB \"{nxbK}\":");
+                foreach (var s in dsSGKCuaNXB)
+                {
+                    s.XuatThongTin();
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Không có sách giáo khoa nào thuộc nhà xuất bản \"{nxbK}\".");
+            }
+
+            // 3. Tìm thành tiền cao nhất
+            double maxThanhTien = danhSachSach.Max(s => s.TinhThanhTien());
+            var sachMax = danhSachSach.Where(s => s.TinhThanhTien() == maxThanhTien).ToList();
+
+            Console.WriteLine("\n========== SÁCH CÓ THÀNH TIỀN CAO NHẤT ==========");
+            Console.WriteLine($"Thành tiền cao nhất là: {maxThanhTien:N0} VNĐ");
+            Console.WriteLine("Chi tiết các cuốn đạt mức này:");
+            foreach (var s in sachMax)
+            {
+                s.XuatThongTin();
+            }
+        }
+    }
+}
