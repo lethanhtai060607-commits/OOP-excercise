@@ -1,0 +1,116 @@
+using System;
+using System.Collections.Generic;
+
+namespace QuanLyChuyenXe
+{
+    // --- Lớp cơ sở ---
+    public class ChuyenXe
+    {
+        public string MaSo { get; set; }
+        public string HoTenTaiXe { get; set; }
+        public string SoXe { get; set; }
+        public double DoanhThu { get; set; }
+
+        public ChuyenXe(string maSo, string hoTenTaiXe, string soXe, double doanhThu)
+        {
+            MaSo = maSo;
+            HoTenTaiXe = hoTenTaiXe;
+            SoXe = soXe;
+            DoanhThu = doanhThu;
+        }
+
+        public virtual void Xuat()
+        {
+            Console.Write($"Mã số: {MaSo,-8} | Tài xế: {HoTenTaiXe,-18} | Số xe: {SoXe,-10} | Doanh thu: {DoanhThu:N0}");
+        }
+    }
+
+    // --- Lớp con: Chuyến xe nội thành ---
+    public class ChuyenXeNoiThanh : ChuyenXe
+    {
+        public int SoTuyen { get; set; }
+        public double SoKm { get; set; }
+
+        public ChuyenXeNoiThanh(string maSo, string hoTenTaiXe, string soXe, double doanhThu, int soTuyen, double soKm)
+            : base(maSo, hoTenTaiXe, soXe, doanhThu)
+        {
+            SoTuyen = soTuyen;
+            SoKm = soKm;
+        }
+
+        public override void Xuat()
+        {
+            Console.Write("[Nội thành] ");
+            base.Xuat();
+            Console.WriteLine($" | Số tuyến: {SoTuyen} | Số km: {SoKm}");
+        }
+    }
+
+    // --- Lớp con: Chuyến xe ngoại thành ---
+    public class ChuyenXeNgoaiThanh : ChuyenXe
+    {
+        public string NoiDen { get; set; }
+        public int SoNgay { get; set; }
+
+        public ChuyenXeNgoaiThanh(string maSo, string hoTenTaiXe, string soXe, double doanhThu, string noiDen, int soNgay)
+            : base(maSo, hoTenTaiXe, soXe, doanhThu)
+        {
+            NoiDen = noiDen;
+            SoNgay = soNgay;
+        }
+
+        public override void Xuat()
+        {
+            Console.Write("[Ngoại thành] ");
+            base.Xuat();
+            Console.WriteLine($" | Nơi đến: {NoiDen,-10} | Số ngày: {SoNgay}");
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Thiết lập hỗ trợ tiếng Việt trên console
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            // Khởi tạo danh sách chuyến xe dùng List<T>
+            List<ChuyenXe> danhSach = new List<ChuyenXe>
+            {
+                new ChuyenXeNoiThanh("NT01", "Nguyễn Văn A", "51A-12345", 1500000, 5, 45.5),
+                new ChuyenXeNoiThanh("NT02", "Trần Văn B", "51A-67890", 2200000, 10, 62.0),
+                new ChuyenXeNgoaiThanh("NG01", "Lê Văn C", "51B-11111", 5000000, "Vũng Tàu", 2),
+                new ChuyenXeNgoaiThanh("NG02", "Phạm Văn D", "51B-22222", 8500000, "Đà Lạt", 4)
+            };
+
+            double tongDTNoiThanh = 0;
+            double tongDTNgoaiThanh = 0;
+            double tongDTAll = 0;
+
+            Console.WriteLine("=== DANH SÁCH CÁC CHUYẾN XE ===");
+            foreach (var cx in danhSach)
+            {
+                cx.Xuat();
+                double dt = cx.DoanhThu;
+                tongDTAll += dt;
+
+                // Phân loại kiểu dữ liệu bằng toán tử 'is' hoặc 'as'
+                if (cx is ChuyenXeNoiThanh)
+                {
+                    tongDTNoiThanh += dt;
+                }
+                else if (cx is ChuyenXeNgoaiThanh)
+                {
+                    tongDTNgoaiThanh += dt;
+                }
+            }
+
+            Console.WriteLine("\n=== THỐNG KÊ DOANH THU ===");
+            Console.WriteLine($"- Tổng doanh thu xe nội thành  : {tongDTNoiThanh:N0} VND");
+            Console.WriteLine($"- Tổng doanh thu xe ngoại thành: {tongDTNgoaiThanh:N0} VND");
+            Console.WriteLine($"- Tổng doanh thu tất cả        : {tongDTAll:N0} VND");
+
+            // C# có Garbage Collector (GC) nên không cần giải phóng bộ nhớ thủ công bằng delete/free.
+        }
+    }
+}
