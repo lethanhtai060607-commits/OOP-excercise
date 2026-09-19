@@ -1,0 +1,145 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace QuanLyGiaoDich
+{
+    // Lớp cha trừu tượng
+    public abstract class GiaoDich
+    {
+        public string MaGiaoDich { get; set; }
+        public DateTime NgayGiaoDich { get; set; }
+        public double DonGia { get; set; }
+        public int SoLuong { get; set; }
+
+        public GiaoDich(string maGiaoDich, DateTime ngayGiaoDich, double donGia, int soLuong)
+        {
+            MaGiaoDich = maGiaoDich;
+            NgayGiaoDich = ngayGiaoDich;
+            DonGia = donGia;
+            SoLuong = soLuong;
+        }
+
+        public abstract double TinhThanhTien();
+
+        public virtual void XuatThongTin()
+        {
+            Console.Write($"Mã GD: {MaGiaoDich,-8} | Ngày: {NgayGiaoDich:dd/MM/yyyy} | Đơn giá: {DonGia,15:N0} | SL: {SoLuong,4}");
+        }
+    }
+
+    // Lớp Giao dịch vàng kế thừa GiaoDich
+    public class GiaoDichVang : GiaoDich
+    {
+        public string LoaiVang { get; set; }
+
+        public GiaoDichVang(string maGiaoDich, DateTime ngayGiaoDich, double donGia, int soLuong, string loaiVang)
+            : base(maGiaoDich, ngayGiaoDich, donGia, soLuong)
+        {
+            LoaiVang = loaiVang;
+        }
+
+        public override double TinhThanhTien()
+        {
+            return SoLuong * DonGia;
+        }
+
+        public override void XuatThongTin()
+        {
+            base.XuatThongTin();
+            Console.WriteLine($" | Loại: Vàng ({LoaiVang,-6}) | Thành tiền: {TinhThanhTien(),18:N0}");
+        }
+    }
+
+    // Lớp Giao dịch tiền tệ kế thừa GiaoDich
+    public class GiaoDichTienTe : GiaoDich
+    {
+        public double TiGia { get; set; }
+        public string LoaiTienTe { get; set; } // "VN", "USD", "EUR"
+
+        public GiaoDichTienTe(string maGiaoDich, DateTime ngayGiaoDich, double donGia, int soLuong, double tiGia, string loaiTienTe)
+            : base(maGiaoDich, ngayGiaoDich, donGia, soLuong)
+        {
+            TiGia = tiGia;
+            LoaiTienTe = loaiTienTe;
+        }
+
+        public override double TinhThanhTien()
+        {
+            string loai = LoaiTienTe.Trim().ToUpper();
+            if (loai == "USD" || loai == "EUR" || loai == "EURO")
+            {
+                return SoLuong * DonGia * TiGia;
+            }
+            // Tiền Việt Nam (VN / VND)
+            return SoLuong * DonGia;
+        }
+
+        public override void XuatThongTin()
+        {
+            base.XuatThongTin();
+            Console.WriteLine($" | Loại tiền: {LoaiTienTe,-4} | Tỉ giá: {TiGia,8:N0} | Thành tiền: {TinhThanhTien(),18:N0}");
+        }
+    }
+
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+
+            // Khởi tạo sẵn mỗi loại 3 giao dịch (đơn giá có trường hợp > 1 tỷ = 1,000,000,000)
+            List<GiaoDich> danhSachGD = new List<GiaoDich>()
+            {
+                // 3 giao dịch vàng
+                new GiaoDichVang("GDV01", new DateTime(2026, 1, 10), 85000000, 10, "9999"),
+                new GiaoDichVang("GDV02", new DateTime(2026, 2, 15), 1200000000, 2, "SJC"), // Đơn giá > 1 tỷ
+                new GiaoDichVang("GDV03", new DateTime(2026, 3, 20), 75000000, 5, "24K"),
+
+                // 3 giao dịch tiền tệ
+                new GiaoDichTienTe("GDT01", new DateTime(2026, 1, 5),  1000, 50, 25400, "USD"),
+                new GiaoDichTienTe("GDT02", new DateTime(2026, 2, 12), 1500000000, 1, 1, "VN"), // Đơn giá > 1 tỷ
+                new GiaoDichTienTe("GDT03", new DateTime(2026, 4, 18), 2000, 30, 27500, "EUR")
+            };
+
+            Console.WriteLine("=============================== DANH SÁCH TẤT CẢ GIAO DỊCH ===============================");
+            foreach (var gd in danhSachGD)
+            {
+                gd.XuatThongTin();
+            }
+
+            // 1. Tính tổng số lượng cho từng loại
+            int tongSLVang = danhSachGD.OfType<GiaoDichVang>().Sum(gd => gd.SoLuong);
+            int tongSLTienTe = danhSachGD.OfType<GiaoDichTienTe>().Sum(gd => gd.SoLuong);
+
+            Console.WriteLine("\n=============================== TỔNG SỐ LƯỢNG TỪNG LOẠI ===============================");
+            Console.WriteLine($"- Tổng số lượng Giao dịch Vàng:    {tongSLVang} (lượng/chỉ)");
+            Console.WriteLine($"- Tổng số lượng Giao dịch Tiền tệ: {tongSLTienTe}");
+
+            // 2. Tính trung bình thành tiền của giao dịch tiền tệ
+            var dsTienTe = danhSachGD.OfType<GiaoDichTienTe>().ToList();
+            double trungBinhThanhTien = dsTienTe.Count > 0 ? dsTienTe.Average(gd => gd.TinhThanhTien()) : 0;
+
+            Console.WriteLine("\n========================= TRUNG BÌNH THÀNH TIỀN GIAO DỊCH TIỀN TỆ =========================");
+            Console.WriteLine($"- Trung bình thành tiền: {trungBinhThanhTien:N0} VNĐ");
+
+            // 3. Xuất ra các giao dịch có đơn giá > 1 tỷ (1,000,000,000)
+            double nguongGia = 1000000000;
+            var dsDonGiaLon = danhSachGD.Where(gd => gd.DonGia > nguongGia).ToList();
+
+            Console.WriteLine("\n======================== CÁC GIAO DỊCH CÓ ĐƠN GIÁ LỚN HƠN 1 TỶ ========================");
+            if (dsDonGiaLon.Count > 0)
+            {
+                foreach (var gd in dsDonGiaLon)
+                {
+                    gd.XuatThongTin();
+                }
+            }
+            else
+            {
+                Console.WriteLine("Không có giao dịch nào có đơn giá > 1 tỷ.");
+            }
+        }
+    }
+}
